@@ -12,7 +12,11 @@
 
 extern int readers_waiting_count;
 extern int iter_count;
-extern pthread_mutex_t mutex;
+extern int writers_amount;
+extern int readers_amount;
+
+extern pthread_mutex_t m_reader;
+extern pthread_mutex_t m_writer;
 extern pthread_cond_t c_reader;
 extern pthread_cond_t c_writer;
 

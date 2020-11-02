@@ -18,11 +18,15 @@
 #endif
 
 void *writer (void *param) {
-	int* int_ptr = (int*)param;
+	struct Thread_args* p = (struct Thread_args*)param;
 
 	for (int i = 0; i < iter_count; i++) {
-		// should use mutex here, only one writer could write the shared_var, to prevent race condition
-		pthread_mutex_lock(&mutex);
+		// wait random time before write the shared var
+		// Note: must sleep before the mutex lock! other wise, it lock first then sleep, other thread got blocked during this thread's sleep time. Not efficient
+
+		int wait_ms = generat_rand_num(5000, 1000);
+		usleep(wait_ms * 1000);
+
 
 		if (readers_waiting_count < 0) {
 			// readers number should always be non-negative
@@ -31,19 +35,20 @@ void *writer (void *param) {
 
 		while (readers_waiting_count != 0) {
 			// block until reader count is zero!
-			pthread_cond_wait(&c_writer, &mutex);
+			pthread_cond_wait(&c_writer, &m_writer);
 		}
 
-		// create a random num [1, 100] to write to shared var
-		*int_ptr = generat_rand_num(100, 1);
-		int wait_sec = generat_rand_num(5, 1);
-		printf("Writer#y: total reader count %d, wait for %d seconds ", readers_waiting_count, wait_sec);
-		sleep(wait_sec);
-		printf(" --> wrote: %d\n", *int_ptr);
+		// should use mutex here, only one writer could write the shared_var, to prevent race condition
+		pthread_mutex_lock(&m_writer);
 
-		pthread_mutex_unlock(&mutex);
+		// create a random num [1, 100] to write to shared var
+		int num = generat_rand_num(100, 1);
+		*p->shared_var = num;
+		printf("\nWriter#%d-%d: total reader count %d, wait for %d milli-second, wrote: %d\n ", p->id, i + 1, readers_waiting_count, wait_ms, *p->shared_var);
+
+		pthread_mutex_unlock(&m_writer);
 	}
 
-	printf("Writer#y: done!\n");
+	printf("Writer#%d: done!\n", p->id);
 	return 0;
 }

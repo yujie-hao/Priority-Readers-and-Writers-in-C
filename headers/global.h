@@ -9,6 +9,11 @@
 #define HEADERS_GLOBAL_H_
 
 #include <pthread.h>
- // writer pthread condition var
+
+struct Thread_args
+{
+	int* shared_var;
+	int id;
+};
 
 #endif /* HEADERS_GLOBAL_H_ */

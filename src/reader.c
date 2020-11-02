@@ -20,26 +20,28 @@
 #endif
 
 void *reader (void *param) {
+	struct Thread_args* p = (struct Thread_args*)param;
 	for (int i = 0; i < iter_count; i++) {
-		// should NOT use mutex here, since multiple reader could read shared var simultaneously,
-		// without race condition
+		// wait random time before read the shared var
+		int wait_ms = generat_rand_num(1000, 10);
+		usleep(wait_ms * 1000);
+
+		pthread_mutex_lock(&m_reader);
 		if (readers_waiting_count < 0) {
 			// readers number should always be non-negative
 			return 0;
 		}
 
 		readers_waiting_count++;
-		// wait random time before read the shared var [1 sec, 5 sec]
-		int wait_sec = generat_rand_num(5, 1);
-		printf("Reader#x: total reader count %d, wait for %d seconds ", readers_waiting_count, wait_sec);
-		sleep(wait_sec);
-		printf(" --> read: %d\n", *(int*)param);
+		printf("\nReader#%d-%d: total reader count %d, wait for %d milli-second, read: %d\n", p->id, i + 1, readers_waiting_count, wait_ms, *p->shared_var);
 		readers_waiting_count--;
-		pthread_cond_signal(&c_writer);
+		pthread_mutex_unlock(&m_reader);
 
+		if (readers_waiting_count == 0) {
+			pthread_cond_broadcast(&c_writer);
+		}
 	}
 
-
-	printf("Reader#x done!\n");
+	printf("Reader#%d done!\n", p->id);
 	return 0;
 }
